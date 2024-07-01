@@ -1,14 +1,11 @@
 use ff::BatchInverter;
-use group::Group;
-use group::Curve;
+use group::{Curve, Group};
 use halo2_proofs::transcript::{Blake2bWrite, Challenge255, ChallengeScalar, EncodedChallenge, TranscriptWrite};
-use halo2_proofs::arithmetic::{CurveAffine, Field};
+use halo2_proofs::arithmetic::{CurveAffine, Field, best_multiexp};
 use pasta_curves::arithmetic::CurveExt;
-use pasta_curves::EpAffine;
-use pasta_curves::{pallas, Ep, Fq};
+use pasta_curves::{EpAffine,pallas, Ep, Fq};
 use rand::{rngs::OsRng, Rng};
-use halo2_proofs::arithmetic::best_multiexp;
-
+use std::time::Instant;
 
 pub struct WipWitness {
     a: Vec<Fq>,
@@ -574,10 +571,14 @@ fn main() {
         commit += gen_g[i]*ip[i];
     }
     commit += gen_h*w.alpha; 
-
+    let now: Instant = Instant::now();
     let proof = prove(&mut transcript, w, gens_g.clone(), gens_h.clone(), gen_g.clone(), gen_h.clone(), P::Point(commit));
+    println!("Generated the proof in {}ms", now.elapsed().as_millis());
     let mut transcript = Blake2bWrite::<_, pallas::Affine, Challenge255<_>>::init(vec![]);
-    verify(&mut transcript, proof, gens_g, gens_h, gen_g, gen_h, P::Point(commit))
+    let now: Instant = Instant::now();
+    verify(&mut transcript, proof, gens_g, gens_h, gen_g, gen_h, P::Point(commit));
+    println!("Verified the proof in {}ms", now.elapsed().as_millis());
+
 }
 
 // fn main() {

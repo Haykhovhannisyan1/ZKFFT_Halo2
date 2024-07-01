@@ -8,6 +8,7 @@ edition = "2021"
 [[bin]]
 name = "MIPA"
 path = "src/optimized_wip.rs"
+# path = "src/modified_wip.rs"
 
 [dependencies]
 halo2_proofs = { git = "https://github.com/zcash/halo2", branch = "main" }

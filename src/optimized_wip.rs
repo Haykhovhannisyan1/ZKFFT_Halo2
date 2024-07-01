@@ -1,18 +1,16 @@
 use ff::BatchInverter;
-use group::Curve;
-use group::Group;
+use group::{Curve, Group};
+use std::time::Instant;
 extern crate halo2_proofs;
 use halo2_proofs::arithmetic::{CurveAffine, Field, best_multiexp};
 use halo2_proofs::transcript::{
     Blake2bWrite, Challenge255, ChallengeScalar, EncodedChallenge, TranscriptWrite,
 };
 use pasta_curves::arithmetic::CurveExt;
-use pasta_curves::EpAffine;
-use pasta_curves::{pallas, Ep, Fq};
+use pasta_curves::{pallas, Ep, Fq, EpAffine};
 use rand::{rngs::OsRng, Rng};
 
 #[derive(Clone)]
-
 pub struct WipWitness {
     a: Vec<Fq>,
     b: Vec<Vec<Fq>>,
@@ -349,7 +347,6 @@ pub fn prove<E: EncodedChallenge<pallas::Affine>, T: TranscriptWrite<pallas::Aff
     let e = transcript_A(transcript, A);
 
     let r_answer = r + (a[0] * e);
-    let mut s_answer: Vec<Fq> = vec![];
     let delta_answer = delta + (alpha * e);
 
     WipProof {
@@ -440,10 +437,8 @@ pub fn verify<E: EncodedChallenge<pallas::Affine>, T: TranscriptWrite<pallas::Af
         *scalar *= -e;
     }
 
-    // let re = proof.r_answer * e;
     for i in 0..generators_g.len() {
-        // let mut scalar = product_cache[i] * re;
-        let mut scalar = product_cache[i] * proof.r_answer;
+        let scalar = product_cache[i] * proof.r_answer;
         multiexp_var.push((scalar, generators_g[i].clone()));
     }
 
@@ -480,7 +475,7 @@ fn gens() -> (
     let mut gen_g = Vec::with_capacity(4);
     let hasher = pallas::Point::hash_to_curve("GENERATORS");
 
-    for _i in 0..4 {
+    for _ in 0..4 {
         let mut my_array: [u8; 11] = [0; 11];
 
         let mut rng = rand::thread_rng();
@@ -491,7 +486,7 @@ fn gens() -> (
         gens_g.push(c);
     }
 
-    for _i in 0..4 {
+    for _ in 0..4 {
         let mut my_array: [u8; 11] = [0; 11];
 
         let mut rng = rand::thread_rng();
@@ -502,9 +497,9 @@ fn gens() -> (
         gen_g.push(c);
     }
 
-    for _j in 0..4 {
+    for _ in 0..4 {
         let mut temp_gens = Vec::with_capacity(4);
-        for _i in 0..4 {
+        for _ in 0..4 {
             let mut my_array: [u8; 11] = [0; 11];
 
             let mut rng = rand::thread_rng();
@@ -589,7 +584,7 @@ fn main() {
         commit += gen_g[i] * ip[i];
     }
     commit += gen_h * w.alpha;
-
+    let now: Instant = Instant::now();
     let proof = prove(
         &mut transcript,
         w.clone(),
@@ -599,6 +594,9 @@ fn main() {
         gen_h.clone(),
         P::Point(commit),
     );
+    println!("Generated the proof in {}ms", now.elapsed().as_millis());
+
+    let now: Instant = Instant::now();
     let mut transcript = Blake2bWrite::<_, pallas::Affine, Challenge255<_>>::init(vec![]);
     verify(
         &mut transcript,
@@ -609,5 +607,6 @@ fn main() {
         gen_h,
         w.b,
         P::Point(commit),
-    )
+    );
+    println!("verified the proof in {}ms", now.elapsed().as_millis());
 }
